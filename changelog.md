@@ -9,3 +9,6 @@ All notable changes to Tonify will be documented in this file. Format follows
 - Baseline repository documentation: `claude.md`, `changelog.md`, `project_status.md`, `reference_docs.md`.
 - `.gitignore` tailored for Python + Node + audio/ML artifacts.
 - PRD (`docs/prd.md`) — full requirements, architecture, data model, ML approach, implementation phases.
+
+### Changed
+- Renamed project from `ToneMatch` to `Tonify` (GitHub repo renamed; README, remote URL, and status doc updated).

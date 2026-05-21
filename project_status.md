@@ -19,4 +19,4 @@ Phase 0 — Scaffolding (per `docs/prd.md` §Implementation Phases).
 - `.env.example` for both apps.
 
 ## Blockers / open questions
-- Decide final project name: folder is `Tonify`, GitHub repo is `ToneMatch`. Align before deeper docs reference one or the other.
+- (none)
