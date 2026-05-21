@@ -36,14 +36,14 @@
 
 | Layer | Choice | Rationale |
 |---|---|---|
-| Frontend | **Next.js (App Router, TypeScript)** | Multi-page app (login, upload, results, library); components kept close to plain HTML/CSS |
+| Frontend | **Vite + React 19 (TypeScript) + Tailwind v4 + React Router** | Local-first SPA. Vite gives a fast dev server, React Router handles `/login` `/upload` `/result/:jobId` `/library`. Components kept close to plain HTML/CSS. |
 | Backend API | **Python 3.11 + FastAPI** | Native fit for ML inference and audio DSP libs |
 | ML / DSP | **PyTorch, librosa, pedalboard, NAM (Neural Amp Modeler), Demucs** | Standard audio-ML stack |
 | Auth + DB | **Supabase (Postgres + Auth)** | One service for auth, DB, file storage; free tier sufficient |
 | File storage | **Supabase Storage** (v1) → optionally Backblaze B2 for large dataset backup | Free tier covers user uploads |
 | Hosting | **Local-first** (FE on `localhost:3000`, BE on `localhost:8000`) | v1 is single-user; defer hosting decisions |
 | Training compute | **Google Colab free tier (T4 GPU)** | Local machine has only Intel UHD; Colab is free and fast enough for a small CNN |
-| Dev tooling | `pnpm` (FE), `uv` or `pip` + `venv` (BE), `ruff`, `prettier`, `pytest` | Standard |
+| Dev tooling | `npm` (FE), `uv` or `pip` + `venv` (BE), `ruff`, ESLint, `pytest` | Standard |
 
 ---
 
@@ -53,7 +53,7 @@
 ┌───────────────────────────────────────────────────────────────────────────────┐
 │                                   BROWSER                                      │
 │  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │  Next.js App (localhost:3000)                                           │  │
+│  │  React SPA (Vite dev server on localhost:5173)                          │  │
 │  │  ┌─────────────┐  ┌──────────────┐  ┌──────────┐  ┌────────────────┐    │  │
 │  │  │   /login    │  │   /upload    │  │ /result  │  │ /library       │    │  │
 │  │  │  (Supabase  │  │ (file picker │  │ (settings│  │ (saved presets)│    │  │
@@ -106,18 +106,24 @@
 
 ```
 Tonify/
-├── frontend/                         # Next.js app
-│   ├── app/
-│   │   ├── login/page.tsx
-│   │   ├── upload/page.tsx
-│   │   ├── result/[jobId]/page.tsx
-│   │   ├── library/page.tsx
-│   │   └── api/                      # thin proxy routes if needed
-│   ├── components/
-│   │   ├── PresetSheet.tsx           # LT25 knob-value layout
-│   │   ├── FileDropzone.tsx
-│   │   └── ClipTrimmer.tsx
-│   ├── lib/supabase.ts
+├── frontend/                         # Vite + React SPA
+│   ├── src/
+│   │   ├── main.tsx                  # React entry point
+│   │   ├── App.tsx                   # Router + nav
+│   │   ├── index.css                 # `@import "tailwindcss";`
+│   │   ├── pages/
+│   │   │   ├── Login.tsx
+│   │   │   ├── Upload.tsx
+│   │   │   ├── Result.tsx            # uses useParams() for :jobId
+│   │   │   └── Library.tsx
+│   │   ├── components/
+│   │   │   ├── PresetSheet.tsx       # LT25 knob-value layout
+│   │   │   ├── FileDropzone.tsx
+│   │   │   └── ClipTrimmer.tsx
+│   │   └── lib/supabase.ts
+│   ├── public/                       # static assets served as-is
+│   ├── index.html                    # SPA shell
+│   ├── vite.config.ts                # React + Tailwind plugins
 │   └── package.json
 │
 ├── backend/                          # FastAPI app
@@ -359,9 +365,9 @@ Expected end-to-end latency on CPU: ~10-20 s (Demucs dominates).
 | `backend/app/ml/inference.py` | Loads `.pt`, returns preset JSON |
 | `ml/dataset.py` | On-the-fly synthetic dataset |
 | `ml/train.py` | Training loop (Colab entry point) |
-| `frontend/app/upload/page.tsx` | Upload UI + clip trimmer |
-| `frontend/components/PresetSheet.tsx` | Settings-sheet display |
-| `frontend/lib/supabase.ts` | Supabase client |
+| `frontend/src/pages/Upload.tsx` | Upload UI + clip trimmer |
+| `frontend/src/components/PresetSheet.tsx` | Settings-sheet display |
+| `frontend/src/lib/supabase.ts` | Supabase client |
 | `supabase/migrations/0001_init.sql` | Tables + RLS policies |
 | `docs/architecture.md` | Architecture diagram + flow narratives |
 | `docs/setup.md` | One-time setup walkthrough |
@@ -373,7 +379,7 @@ Expected end-to-end latency on CPU: ~10-20 s (Demucs dominates).
 ## Implementation Phases
 
 1. **Phase 0 — Scaffolding** (1-2 days)
-   Repo layout, Next.js + FastAPI hello world, Supabase project + tables + RLS, `.env.example`, `docs/setup.md` first pass.
+   Repo layout, Vite + React + FastAPI hello world, Supabase project + tables + RLS, `.env.example`, `docs/setup.md` first pass.
 
 2. **Phase 1 — Auth + Upload + Storage** (3-4 days)
    Supabase auth wired up; `/upload` page; file goes to Supabase Storage; `upload_jobs` row created.
@@ -406,7 +412,7 @@ End-to-end checks before declaring v1 done:
 
 1. **Setup**: from a clean clone, following `docs/setup.md`, a developer can:
    - install backend deps, run `uvicorn app.main:app` on `:8000`,
-   - install frontend deps, run `pnpm dev` on `:3000`,
+   - install frontend deps, run `npm run dev` on `:5173`,
    - apply `supabase/migrations/*.sql` against a Supabase project,
    - download `prs_custom_24_v1.pt` into `backend/models/`,
    - log in and load the upload page.
